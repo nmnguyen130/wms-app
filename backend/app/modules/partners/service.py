@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit
 from app.core.exceptions import AppException
-from app.core.pagination import PaginationParams
+from app.utils.pagination import PaginationParams
 from app.modules.auth.model import User
 from app.modules.partners.model import Partner, PartnerRole, PartnerRoleAssignment
 from app.modules.partners.schemas import PartnerCreate, PartnerUpdate

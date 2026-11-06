@@ -1,7 +1,7 @@
 import pytest
 
 from app.core.config import settings
-from app.core.security import (
+from app.utils.security import (
     create_access_token,
     create_refresh_token,
     decode_token,

@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from app.core.pagination import PaginationParams, paginate
+from app.utils.pagination import PaginationParams, paginate
 
 
 def _build_app() -> FastAPI:

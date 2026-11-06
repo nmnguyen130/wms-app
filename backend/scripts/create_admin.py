@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from app.core.database import async_session_factory, engine
 from app.core.permissions import Role
-from app.core.security import hash_password
+from app.utils.security import hash_password
 from app.modules.auth.model import User
 
 

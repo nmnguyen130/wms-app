@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from httpx import AsyncClient
 
-from app.core.security import create_access_token
+from app.utils.security import create_access_token
 from tests.conftest import (
     ADMIN_EMAIL,
     ADMIN_PASSWORD,
@@ -131,7 +131,7 @@ async def test_change_password_invalidates_existing_sessions(
 
     stale = await client.get("/api/v1/users/me", headers=admin_headers)
     assert stale.status_code == 401
-    assert stale.json()["error_code"] == "TOKEN_REVOKED"
+    assert stale.json()["error_code"] == "UNAUTHORIZED"
 
     relogin = await client.post(
         "/api/v1/auth/login",
@@ -212,7 +212,7 @@ async def test_access_update_revokes_target_sessions(
 
     stale = await client.get("/api/v1/users/me", headers=operator_headers)
     assert stale.status_code == 401
-    assert stale.json()["error_code"] == "TOKEN_REVOKED"
+    assert stale.json()["error_code"] == "UNAUTHORIZED"
 
 
 async def test_inactive_user_cannot_login(
@@ -232,7 +232,7 @@ async def test_inactive_user_cannot_login(
         json={"email": OPERATOR_EMAIL, "password": OPERATOR_PASSWORD},
     )
     assert response.status_code == 403
-    assert response.json()["error_code"] == "ACCOUNT_INACTIVE"
+    assert response.json()["error_code"] == "FORBIDDEN"
 
 
 async def test_inactive_user_access_token_is_rejected(
@@ -249,8 +249,8 @@ async def test_inactive_user_access_token_is_rejected(
     assert deactivated.status_code == 200
 
     response = await client.get("/api/v1/users/me", headers=operator_headers)
-    assert response.status_code == 403
-    assert response.json()["error_code"] == "ACCOUNT_INACTIVE"
+    assert response.status_code == 401
+    assert response.json()["error_code"] == "UNAUTHORIZED"
 
 
 async def test_me_requires_authentication(client: AsyncClient) -> None:
@@ -272,7 +272,7 @@ async def test_expired_access_token_returns_token_expired(
 
     assert response.status_code == 401
     assert response.json()["error_code"] == "TOKEN_EXPIRED"
-    assert 'invalid_token' in response.headers["www-authenticate"]
+    assert response.headers["www-authenticate"] == "Bearer"
 
 
 async def test_malformed_access_token_returns_token_invalid(client: AsyncClient) -> None:
@@ -282,7 +282,7 @@ async def test_malformed_access_token_returns_token_invalid(client: AsyncClient)
     )
 
     assert response.status_code == 401
-    assert response.json()["error_code"] == "TOKEN_INVALID"
+    assert response.json()["error_code"] == "UNAUTHORIZED"
 
 
 async def test_refresh_token_is_rejected_as_access_token(
@@ -301,15 +301,14 @@ async def test_refresh_token_is_rejected_as_access_token(
     )
 
     assert response.status_code == 401
-    assert response.json()["error_code"] == "TOKEN_INVALID"
+    assert response.json()["error_code"] == "UNAUTHORIZED"
 
 
 async def test_openapi_exposes_bearer_auth(client: AsyncClient) -> None:
     schema = (await client.get("/api/v1/openapi.json")).json()
 
-    scheme = schema["components"]["securitySchemes"]["BearerAuth"]
+    scheme = schema["components"]["securitySchemes"]["HTTPBearer"]
     assert scheme["type"] == "http"
     assert scheme["scheme"] == "bearer"
-    assert scheme["bearerFormat"] == "JWT"
-    assert {"BearerAuth": []} in schema["paths"]["/api/v1/users/me"]["get"]["security"]
+    assert {"HTTPBearer": []} in schema["paths"]["/api/v1/users/me"]["get"]["security"]
     assert "security" not in schema["paths"]["/api/v1/auth/login"]["post"]

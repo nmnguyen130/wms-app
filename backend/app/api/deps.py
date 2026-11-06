@@ -10,7 +10,7 @@ from app.core.context import get_current_context
 from app.core.database import async_session_factory
 from app.core.exceptions import AppException
 from app.core.permissions import Permission, enforce_permission
-from app.core.security import decode_token
+from app.utils.security import decode_token
 from app.modules.auth.model import User
 
 oauth2_scheme = HTTPBearer(auto_error=False)

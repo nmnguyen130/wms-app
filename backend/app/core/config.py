@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from limits import parse
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
@@ -19,6 +20,12 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+    CORS_ALLOW_CREDENTIALS: bool = False
+
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_DEFAULT: str = "600/minute"
+    RATE_LIMIT_LOGIN: str = "30/minute"
+    RATE_LIMIT_REFRESH: str = "60/minute"
 
     POSTGRES_USER: str = "wms_app"
     POSTGRES_PASSWORD: SecretStr | None = None
@@ -62,6 +69,12 @@ class Settings(BaseSettings):
 
         if "*" in self.cors_origins:
             raise ValueError("ALLOWED_ORIGINS must not contain '*'")
+
+        for policy in (self.RATE_LIMIT_DEFAULT, self.RATE_LIMIT_LOGIN, self.RATE_LIMIT_REFRESH):
+            try:
+                parse(policy)
+            except ValueError as exc:
+                raise ValueError(f"Invalid rate limit policy: {policy!r}") from exc
 
         return self
 

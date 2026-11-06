@@ -59,3 +59,37 @@ Health lives in the app, not in the image: point your orchestrator or load balan
 - Apply schema changes with `uv run alembic upgrade head` during deployment.
 - Create the first administrator with the bootstrap script, then disable the script's
   database credentials or run it from a controlled environment.
+
+### Reverse proxy
+
+Uvicorn only honors `X-Forwarded-For`/`X-Forwarded-Proto` from trusted addresses
+(`proxy_headers` is on by default). Set `FORWARDED_ALLOW_IPS` to the proxy's IP or CIDR;
+keep the default `127.0.0.1,::1` when no proxy is in front, and never use `*` if the API
+is directly reachable. When the proxy runs on the host while the API runs in Compose, the
+proxy connects from the Docker gateway address (e.g. `172.18.0.1`), not loopback, so
+trust that address explicitly or run the proxy as a Compose service.
+
+Caddy sets `X-Forwarded-*` automatically and ignores inbound spoofed values from
+untrusted peers. Nginx requires explicit headers:
+
+```nginx
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-Host $host;
+```
+
+Rate limiting keys on the client IP resolved by Uvicorn, so behind a proxy it is only
+accurate once `FORWARDED_ALLOW_IPS` is configured.
+
+### Rate limiting and CORS
+
+Limits are enforced in-process per client IP with a moving window: login
+`RATE_LIMIT_LOGIN`, refresh `RATE_LIMIT_REFRESH`, everything else
+`RATE_LIMIT_DEFAULT`. Health probes, docs, and CORS preflight requests are exempt.
+The Docker image runs a single Uvicorn worker, so the in-memory counters are shared;
+if you scale to multiple workers or instances, switch `limits` storage to Redis.
+
+CORS sends `Access-Control-Allow-Origin` for configured origins and allows only
+`Authorization`, `Content-Type`, and `X-Request-ID`. `X-Request-ID` and `Retry-After`
+are exposed to browsers. Credentials stay disabled unless `CORS_ALLOW_CREDENTIALS=true`
+is set deliberately.

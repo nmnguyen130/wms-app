@@ -31,3 +31,4 @@ def setup_logging(level: int = logging.INFO) -> None:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(JsonFormatter())
         root_logger.handlers = [handler]
+

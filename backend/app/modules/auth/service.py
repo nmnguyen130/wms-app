@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.audit import record_audit
 from app.core.config import settings
 from app.core.exceptions import AppException
-from app.core.pagination import PaginationParams
+from app.utils.pagination import PaginationParams
 from app.core.permissions import Role
-from app.core.security import (
+from app.utils.security import (
     create_access_token,
     create_refresh_token,
     decode_token,

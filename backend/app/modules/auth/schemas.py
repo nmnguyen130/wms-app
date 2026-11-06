@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.core.permissions import Role
-from app.core.security import validate_password_strength
+from app.utils.security import validate_password_strength
 
 
 class LoginRequest(BaseModel):

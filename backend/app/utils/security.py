@@ -128,3 +128,4 @@ def decode_token(token: str, expected_type: str = "access") -> dict:
     if payload.get("type") != expected_type:
         raise ValueError(f"Invalid token type: expected '{expected_type}', got '{payload.get('type')}'")
     return payload
+

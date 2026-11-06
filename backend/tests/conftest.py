@@ -17,6 +17,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 os.environ["ENVIRONMENT"] = "testing"
 os.environ["JWT_SECRET"] = "test-only-secret-not-for-production-0123456789abcdef"
+os.environ["RATE_LIMIT_ENABLED"] = "false"
 if test_database_url := os.environ.get("TEST_DATABASE_URL"):
     os.environ["DATABASE_URL"] = test_database_url
 else:
@@ -26,7 +27,7 @@ import app.models_registry  # noqa: E402,F401  (register every model on Base.met
 from app.core.config import settings  # noqa: E402
 from app.core.database import Base, async_session_factory, engine  # noqa: E402
 from app.core.permissions import Role  # noqa: E402
-from app.core.security import hash_password  # noqa: E402
+from app.utils.security import hash_password  # noqa: E402
 from app.main import app  # noqa: E402
 from app.modules.auth.model import User  # noqa: E402
 from app.modules.warehouses.model import Warehouse  # noqa: E402

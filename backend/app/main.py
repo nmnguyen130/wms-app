@@ -5,12 +5,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
-from app.api.middleware import RequestContextMiddleware
+from app.api.middleware import RateLimitMiddleware, RequestContextMiddleware
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.database import engine
 from app.core.exceptions import register_exception_handlers
-from app.core.logging import setup_logging
+from app.utils.logging import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -38,14 +38,19 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
 
+    # Middleware execution order in Starlette (last added = outermost):
+    # Incoming request: CORSMiddleware -> RequestContextMiddleware -> RateLimitMiddleware -> Endpoint
+    app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(RequestContextMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_credentials=True,
+        allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        expose_headers=["X-Request-ID", "Retry-After"],
+        max_age=600,
     )
-    app.add_middleware(RequestContextMiddleware)
 
     app.include_router(health_router)
     app.include_router(api_router, prefix=settings.API_V1_STR)
