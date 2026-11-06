@@ -35,7 +35,10 @@ class RequestContextMiddleware:
         request_id = raw_request_id if _REQUEST_ID_RE.fullmatch(raw_request_id) else str(uuid.uuid4())
 
         client = scope.get("client")
-        ctx = RequestContext(request_id=request_id, client_ip=client[0] if client else "127.0.0.1")
+        ctx = RequestContext(
+            request_id=request_id,
+            client_ip=client[0] if client else "127.0.0.1",
+        )
 
         content_length = headers.get(b"content-length")
         if content_length:

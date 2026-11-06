@@ -27,44 +27,41 @@ class AppException(Exception):
         super().__init__(detail)
 
     @classmethod
-    def not_found(cls, resource: str = "Resource") -> "AppException":
-        return cls(
-            detail=f"{resource} not found",
-            status_code=status.HTTP_404_NOT_FOUND,
-            error_code="NOT_FOUND",
-        )
-
-    @classmethod
     def bad_request(cls, detail: str) -> "AppException":
-        return cls(
-            detail=detail,
-            status_code=status.HTTP_400_BAD_REQUEST,
-            error_code="BAD_REQUEST",
-        )
+        return cls(detail, status.HTTP_400_BAD_REQUEST, "BAD_REQUEST")
 
     @classmethod
-    def unauthorized(cls, detail: str = "Authentication required") -> "AppException":
+    def unauthorized(
+        cls,
+        detail: str = "Authentication required",
+        error_code: str = "UNAUTHORIZED",
+    ) -> "AppException":
         return cls(
-            detail=detail,
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            error_code="UNAUTHORIZED",
+            detail,
+            status.HTTP_401_UNAUTHORIZED,
+            error_code,
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     @classmethod
     def forbidden(cls, detail: str = "Access denied") -> "AppException":
-        return cls(
-            detail=detail,
-            status_code=status.HTTP_403_FORBIDDEN,
-            error_code="FORBIDDEN",
-        )
+        return cls(detail, status.HTTP_403_FORBIDDEN, "FORBIDDEN")
+
+    @classmethod
+    def not_found(cls, resource: str = "Resource") -> "AppException":
+        return cls(f"{resource} not found", status.HTTP_404_NOT_FOUND, "NOT_FOUND")
 
     @classmethod
     def conflict(cls, detail: str) -> "AppException":
+        return cls(detail, status.HTTP_409_CONFLICT, "CONFLICT")
+
+    @classmethod
+    def locked(cls, detail: str = "Account is temporarily locked", retry_after: int = 60) -> "AppException":
         return cls(
-            detail=detail,
-            status_code=status.HTTP_409_CONFLICT,
-            error_code="CONFLICT",
+            detail,
+            status.HTTP_423_LOCKED,
+            "ACCOUNT_LOCKED",
+            headers={"Retry-After": str(retry_after)},
         )
 
 
@@ -99,7 +96,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def validation_exception_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
         errors = [{"loc": list(err["loc"]), "msg": err["msg"], "type": err["type"]} for err in exc.errors()]
         return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content=_build_error_response("Validation error", "VALIDATION_ERROR", 422, errors),
         )
 

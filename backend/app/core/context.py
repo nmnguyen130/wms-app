@@ -5,8 +5,10 @@ from dataclasses import dataclass
 from uuid import UUID
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class RequestContext:
+    """Per-request metadata. user_id is filled after token authentication."""
+
     request_id: str
     client_ip: str = "127.0.0.1"
     user_id: UUID | None = None

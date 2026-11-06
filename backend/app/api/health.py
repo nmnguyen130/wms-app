@@ -11,18 +11,20 @@ from app.api.deps import get_db
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/health", tags=["Health"])
+router = APIRouter(tags=["Health"])
 
 
-@router.get("/live", status_code=status.HTTP_200_OK)
+@router.get("/health/live", status_code=status.HTTP_200_OK)
+@router.get("/api/v1/health/live", status_code=status.HTTP_200_OK, include_in_schema=False)
 async def liveness_check() -> dict[str, str]:
-    """Liveness probe: verifies that the application process is running."""
+    """Liveness probe: verifies application process is running."""
     return {"status": "alive", "version": settings.VERSION}
 
 
-@router.get("/ready")
+@router.get("/health/ready")
+@router.get("/api/v1/health/ready", include_in_schema=False)
 async def readiness_check(db: AsyncSession = Depends(get_db)) -> JSONResponse:
-    """Readiness probe: verifies that the application can communicate with downstream services."""
+    """Readiness probe: verifies connection to database."""
     database_ok = False
     try:
         await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=2)
@@ -30,7 +32,7 @@ async def readiness_check(db: AsyncSession = Depends(get_db)) -> JSONResponse:
     except Exception as exc:
         with suppress(Exception):
             await db.rollback()
-        logger.error("Database connection readiness probe failed: %s", exc)
+        logger.error("Database readiness probe failed: %s", exc)
 
     status_code = status.HTTP_200_OK if database_ok else status.HTTP_503_SERVICE_UNAVAILABLE
     return JSONResponse(
@@ -41,3 +43,4 @@ async def readiness_check(db: AsyncSession = Depends(get_db)) -> JSONResponse:
             "version": settings.VERSION,
         },
     )
+

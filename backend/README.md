@@ -13,8 +13,12 @@ FastAPI + SQLAlchemy 2.x (async) + PostgreSQL backend for a Warehouse Management
 ```bash
 cp .env.example .env            # set POSTGRES_PASSWORD and JWT_SECRET
 uv sync
+uv run alembic upgrade head
+uv run python -m scripts.create_admin --email admin@example.com
 uv run uvicorn app.main:app --reload --port 8000
 ```
+
+`create_admin` reads the password from `BOOTSTRAP_ADMIN_PASSWORD` or prompts for it.
 
 - Docs: http://localhost:8000/api/v1/docs
 - Liveness: http://localhost:8000/api/v1/health/live
@@ -24,9 +28,15 @@ Generate a JWT secret with `openssl rand -hex 32`.
 
 ## Tests
 
+Integration tests run against a real PostgreSQL database. By default the suite uses
+`POSTGRES_DB=wms_test`, creating the database and applying migrations automatically.
+
 ```bash
 uv run pytest
 ```
+
+To point the suite at another database, set `TEST_DATABASE_URL` (or `TEST_POSTGRES_DB`).
+Never point it at the development database: tables are truncated between tests.
 
 ## Docker
 
@@ -46,4 +56,6 @@ Health lives in the app, not in the image: point your orchestrator or load balan
 - Set `ENVIRONMENT=production`; docs are disabled automatically.
 - Rotate `JWT_SECRET` and database credentials; use a dedicated database role.
 - Terminate TLS at a reverse proxy and keep CORS origins explicit.
-- Add Alembic before shipping schema changes.
+- Apply schema changes with `uv run alembic upgrade head` during deployment.
+- Create the first administrator with the bootstrap script, then disable the script's
+  database credentials or run it from a controlled environment.

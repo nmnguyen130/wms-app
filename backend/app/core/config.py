@@ -30,8 +30,12 @@ class Settings(BaseSettings):
     DATABASE_MAX_OVERFLOW: int = 20
 
     JWT_SECRET: SecretStr
+    JWT_ISSUER: str = "wms-backend"
+    JWT_AUDIENCE: str = "wms-api"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    MAX_FAILED_LOGIN_ATTEMPTS: int = 5
+    ACCOUNT_LOCKOUT_MINUTES: int = 15
 
     MAX_REQUEST_BODY_BYTES: int = 1_048_576
 

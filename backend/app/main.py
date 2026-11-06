@@ -4,8 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.health import router as health_router
 from app.api.middleware import RequestContextMiddleware
-from app.api.v1.router import api_router
+from app.api.router import api_router
 from app.core.config import settings
 from app.core.database import engine
 from app.core.exceptions import register_exception_handlers
@@ -26,7 +27,7 @@ async def lifespan(_: FastAPI):
 def create_app() -> FastAPI:
     is_prod = settings.ENVIRONMENT == "production"
 
-    application = FastAPI(
+    app = FastAPI(
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
         openapi_url=None if is_prod else f"{settings.API_V1_STR}/openapi.json",
@@ -35,23 +36,21 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Global Exception Handlers
-    register_exception_handlers(application)
+    register_exception_handlers(app)
 
-    # Middleware Pipeline
-    application.add_middleware(
+    app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
-    application.add_middleware(RequestContextMiddleware)
+    app.add_middleware(RequestContextMiddleware)
 
-    # Routers
-    application.include_router(api_router, prefix=settings.API_V1_STR)
+    app.include_router(health_router)
+    app.include_router(api_router, prefix=settings.API_V1_STR)
 
-    @application.get("/", tags=["Root"])
+    @app.get("/", tags=["Root"])
     async def root_info() -> dict[str, str]:
         info = {
             "name": settings.PROJECT_NAME,
@@ -62,7 +61,7 @@ def create_app() -> FastAPI:
             info["docs"] = f"{settings.API_V1_STR}/docs"
         return info
 
-    return application
+    return app
 
 
 app = create_app()
